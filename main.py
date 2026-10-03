@@ -1,3 +1,4 @@
+import sys
 from dotenv import load_dotenv
 from agento11y import Client, GenerationStart, ModelRef
 from agento11y import user_text_message, assistant_text_message
@@ -20,7 +21,10 @@ model = OllamaModel(
 # 2. Initialize Agent
 agent = Agent(
     model,
-    system_prompt="You are a helpful financial assistant. Always use your available tool to convert currency.",
+    system_prompt=(
+        "You are a helpful financial assistant. Always use your available "
+        "tool when asked to perform currency conversion."
+    ),
 )
 
 # 3. Define Tool
@@ -32,30 +36,60 @@ def convert_usd_to_eur(amount: float) -> str:
     return f"${amount} USD is approximately €{converted:.2f} EUR"
 
 
+def run_chat_loop():
+    print("==================================================")
+    print(" Financial Agent CLI (Local Ollama + agento11y)")
+    print(" Type 'exit' or 'quit' to end the conversation.")
+    print("==================================================\n")
+
+    # Maintain conversation message history across turns
+    message_history = []
+    conversation_id = "cli-session-1"
+
+    while True:
+        try:
+            user_input = input("You: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting chat...")
+            break
+
+        if not user_input:
+            continue
+
+        if user_input.lower() in ["exit", "quit"]:
+            print("Goodbye!")
+            break
+
+        # Instrument each turn with Grafana agento11y
+        with client.start_generation(
+            GenerationStart(
+                conversation_id=conversation_id,
+                agent_name="pydantic-currency-agent",
+                agent_version="1.0.0",
+                model=ModelRef(provider="ollama", name="llama3.2"),
+            )
+        ) as rec:
+            # Pass existing message_history so the model remembers previous context
+            result = agent.run_sync(
+                user_input,
+                message_history=message_history
+            )
+
+            # Update the message history with new messages from this turn
+            message_history = result.all_messages()
+
+            # Record telemetry for Grafana Cloud
+            rec.set_result(
+                input=[user_text_message(user_input)],
+                output=[assistant_text_message(str(result.output))],
+            )
+
+        print(f"\nAgent: {result.output}\n")
+
+
 if __name__ == "__main__":
-    prompt = "How much is $150 USD in Euros?"
-    print(f"\n--> Sending prompt: '{prompt}'\n")
-
-    # Instrument execution with Grafana agento11y
-    with client.start_generation(
-        GenerationStart(
-            conversation_id="conv-1",
-            agent_name="pydantic-currency-agent",
-            agent_version="1.0.0",
-            model=ModelRef(provider="ollama", name="llama3.2"),
-        )
-    ) as rec:
-        # Run PydanticAI agent
-        result = agent.run_sync(prompt)
-
-        # Record inputs and outputs to Grafana
-        rec.set_result(
-            input=[user_text_message(prompt)],
-            output=[assistant_text_message(str(result.output))],
-        )
-
-    print("--> Final Agent Response:")
-    print(result.output)
-
-    # Clean shutdown to flush telemetry to Grafana Cloud
-    client.shutdown()
+    try:
+        run_chat_loop()
+    finally:
+        # Flush all telemetry to Grafana Cloud upon exit
+        client.shutdown()
