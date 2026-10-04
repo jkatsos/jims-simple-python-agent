@@ -7,8 +7,14 @@ from pydantic_ai import Agent
 from pydantic_ai.models.ollama import OllamaModel
 from pydantic_ai.providers.ollama import OllamaProvider
 
+#stat the local Ollama 2 steps 2 terminal windows:
+#ollama serve
+#run ollama run llama3.2
+
 load_dotenv()
 
+#
+#
 # Initialize the Grafana Agent Observability Client
 client = Client()
 
