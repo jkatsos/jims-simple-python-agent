@@ -13,8 +13,6 @@ from pydantic_ai.providers.ollama import OllamaProvider
 
 load_dotenv()
 
-#
-#
 # Initialize the Grafana Agent Observability Client
 client = Client()
 
