@@ -23,7 +23,7 @@ This project is a small Python CLI agent that uses PydanticAI with a local Ollam
             | OTLP Telemetry (agento11y)
             v
 +-------------------------------------------------------------------+
-|               Grafana Cloud (prod-au-southeast-1)                 |
+|               Grafana Cloud                                    |
 |                                                                   |
 |   - Generation Spans                                              |
 |   - Input/Output Traces                                           |

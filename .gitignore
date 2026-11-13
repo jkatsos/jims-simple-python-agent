@@ -1,4 +1,21 @@
+# Allowlist: ignore everything by default, then explicitly unignore intended files
+*
+!.gitignore
+!README.md
+!LICENSE
+!main.py
+!requirements.txt
+!pyproject.toml
+!.env.example
+!.vscode/
+!.vscode/launch.json
+
+# Always keep secrets and local artifacts out, even if the allowlist changes
 .env
+.env.*
+!.env.example
+*.pem
+*.key
 .venv/
 __pycache__/
 *.py[cod]
